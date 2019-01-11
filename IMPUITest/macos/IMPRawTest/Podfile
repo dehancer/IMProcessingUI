@@ -1,0 +1,21 @@
+
+use_frameworks!
+inhibit_all_warnings!
+
+target 'IMPRawTest' do
+    pod 'Surge', :path => '../../../../Surge'
+    pod 'SnapKit'
+    pod 'ObjectMapper'
+    pod 'IMProcessing', :path => '../../../../IMProcessing-swift4'
+    pod 'IMProcessingUI', :path => '../../../../IMProcessingUI-swift4'
+end
+
+
+post_install do |installer|
+    installer.pods_project.targets.each do |target|
+        target.build_configurations.each do |config|
+            config.build_settings['SWIFT_VERSION'] = '4.2'
+            config.build_settings['DYLIB_COMPATIBILITY_VERSION'] = ''
+        end
+    end
+end
