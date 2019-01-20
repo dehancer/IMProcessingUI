@@ -86,7 +86,6 @@ public extension IMPHistogramViewDataSource {
         }
         
         public func reload() {
-            //self.setNeedsDisplay(self.bounds)
             needsDisplay = true
         }
         
@@ -103,8 +102,6 @@ public extension IMPHistogramViewDataSource {
         private func getPath(channel:[Float], index:Int, source:IMPHistogramViewDataSource) -> (CGPath,CGPath,CGPath) {
             
             let clamp = source.histogram(view: self, clampEdgesForChannel: index)
-
-            //NSLog("[\(index)]---> \(clamp)")
             
             let path  = CGMutablePath()
             let size  = channel.count
