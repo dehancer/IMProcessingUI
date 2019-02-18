@@ -380,6 +380,7 @@ import IMProcessing
                 context.duration = 0.1
                 self.animator().alphaValue = 1.0
             }, completionHandler: nil)
+            
             NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(self.fadeOut), object: nil)
         }
         

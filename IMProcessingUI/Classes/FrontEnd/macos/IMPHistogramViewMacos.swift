@@ -53,6 +53,9 @@ public extension IMPHistogramViewDataSource {
     //
     public class IMPHistogramView: IMPViewBase, IMPDeferrable, CALayerDelegate {
         
+        public var animated:Bool = false
+        public var animationDuration:TimeInterval = 0.1
+
         public var backgroundColor:NSColor? {
             didSet{
                 if let bc = backgroundColor {
@@ -161,21 +164,21 @@ public extension IMPHistogramViewDataSource {
             guard layer === self.layer else {return }
             drawShapes()
         }
-        
-        public func layoutSublayers(of layer: CALayer) {
-            drawShapes()
+
+        public override func layout() {
+            super.layout()
+             drawShapes()
         }
         
-        private func updateShapes(histogram:IMPHistogram, source:IMPHistogramViewDataSource){
+        private func updateShapes(newLayer:CAShapeLayer, histogram:IMPHistogram, source:IMPHistogramViewDataSource)
+            ->  ([CAShapeLayer],[CAShapeLayer],[CAShapeLayer]) {
+            
+            var shapes:[CAShapeLayer] = [CAShapeLayer]()
+            var leftClampLayers:[CAShapeLayer] = [CAShapeLayer]()
+            var rightClampLayers:[CAShapeLayer] = [CAShapeLayer]()
+            
             if shapes.count != histogram.channels.count {
-                for (i,s) in shapes.enumerated() {
-                    s.removeFromSuperlayer()
-                    leftClampLayers[i].removeFromSuperlayer()
-                    rightClampLayers[i].removeFromSuperlayer()
-                }
-                shapes.removeAll()
-                leftClampLayers.removeAll()
-                rightClampLayers.removeAll()
+
                 for i in 0..<histogram.channels.count {
                     leftClampLayers.append(CAShapeLayer())
                     leftClampLayers[i].masksToBounds = true
@@ -186,9 +189,9 @@ public extension IMPHistogramViewDataSource {
                     shapes.append(CAShapeLayer())
                     shapes[i].backgroundColor = NSColor.clear.cgColor
                     
-                    layer?.addSublayer(shapes[i])
                     shapes[i].addSublayer(leftClampLayers[i])
                     shapes[i].addSublayer(rightClampLayers[i])
+                    newLayer.addSublayer(shapes[i])
                 }
             }
             
@@ -197,14 +200,22 @@ public extension IMPHistogramViewDataSource {
                 rightClampLayers[i].frame = bounds
                 leftClampLayers[i].frame = bounds
             }
+            return (shapes,leftClampLayers,rightClampLayers)
         }
         
-        private func drawShapes(){
+        private var oldLayer:CAShapeLayer?
+        
+        private func drawShapes() {
+            
+            var newLayer = CAShapeLayer()
+            
+            newLayer.frame = bounds
             
             guard let source = dataSource else { return }
             let histogram = source.histogram(view: self)
             
-            updateShapes(histogram: histogram, source: source)
+             var (shapes,leftClampLayers,rightClampLayers)
+                = updateShapes(newLayer: newLayer, histogram: histogram, source: source)
             
             for (i,c) in histogram.pdf(scale: bounds.height.float).channels.enumerated() {
 
@@ -252,15 +263,67 @@ public extension IMPHistogramViewDataSource {
                 rightClampLayers[i].backgroundColor = oblique
                 
                 rightClampLayers[i].mask = sh
-
             }
+            
+            if animated {
+                if let old = oldLayer {
+                    oldLayers.append(old)
+                    for s in old.sublayers! {
+                        s.add(self.animationFade, forKey: "fade")
+                    }
+                }
+            }
+            
+            layer?.addSublayer(newLayer)
+            
+            if !animated {
+                oldLayer?.removeFromSuperlayer()
+            }
+            
+            if animated {
+                for s in newLayer.sublayers! {
+                    s.add(self.animationAppear, forKey: "appear")
+                }
+            }
+            
+            oldLayer = newLayer
         }
         
-        private lazy var shapes:[CAShapeLayer] = [CAShapeLayer]()
-        private lazy var leftClampLayers:[CAShapeLayer] = [CAShapeLayer]()
-        private lazy var rightClampLayers:[CAShapeLayer] = [CAShapeLayer]()
+        lazy var animationFade:CABasicAnimation = {
+            let animation = CABasicAnimation(keyPath: "strokeEnd")
+            animation.delegate = self
+            animation.fromValue = 1.0
+            animation.toValue = 0.0
+            animation.duration = animationDuration
+            animation.timingFunction = CAMediaTimingFunction(name: .linear)
+            animation.isRemovedOnCompletion = true
+            return animation
+        }()
+        
+        lazy var animationAppear:CABasicAnimation = {
+            let animation = CABasicAnimation(keyPath: "strokeEnd")
+            animation.delegate = self
+            animation.fromValue = 0.0
+            animation.toValue = 1.0
+            animation.duration = animationDuration
+            animation.timingFunction = CAMediaTimingFunction(name: .linear)
+            animation.isRemovedOnCompletion = true
+            return animation
+        }()
+        
+        
+        private var oldLayers:[CAShapeLayer] = []
     }
-    
+
+extension IMPHistogramView:CAAnimationDelegate{
+    public func animationDidStop(_ anim: CAAnimation, finished flag: Bool){
+        for o in oldLayers {
+            o.removeFromSuperlayer()
+        }
+        oldLayers.removeAll()
+    }
+}
+
     extension NSImage {
         func drawObliqueLines(color:NSColor, linesColor:NSColor, lineWidth:CGFloat, step:CGFloat) {
             
