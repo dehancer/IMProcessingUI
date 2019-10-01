@@ -29,13 +29,13 @@ import AppKit
 
 public extension IMPImageView {
     
-    public func updateFrameSize()  {
+    func updateFrameSize()  {
         if let texture = filter?.source?.texture{
             self.updateFrameSize(texture: texture)
         }
     }
     
-    public func updateFrameSize(texture:MTLTexture)  {
+    func updateFrameSize(texture:MTLTexture)  {
         let w = (texture.width.float/IMPView.scaleFactor).cgfloat
         let h = (texture.height.float/IMPView.scaleFactor).cgfloat
         DispatchQueue.main.async(execute: {

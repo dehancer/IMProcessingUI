@@ -127,7 +127,7 @@ public class IMPCurvesView: IMPViewBase, IMPDeferrable {
             }
         }
         set{
-            if let index = (list.index { (object) -> Bool in
+            if let index = (list.firstIndex { (object) -> Bool in
                 return object.id == id
             }) {
                 if let v = newValue {
@@ -643,7 +643,7 @@ extension IMPCurvesView {
         
         guard let curve = info.curve else { return }
 
-        let cp = currentPoint ?? float2(-1)
+        let cp = currentPoint ?? float2(repeating: -1)
         
         let markerSizeHere = markerSize
 
